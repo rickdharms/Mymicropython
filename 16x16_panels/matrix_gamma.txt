@@ -1,0 +1,86 @@
+import machine
+from neopixel import NeoPixel
+import myfont
+import colors
+
+# Configuration
+LED_PIN = 15  # Pin connected to the LED data line
+NUM_LEDS = 16 * 16  # Total number of LEDs (16x16 matrix)
+MATRIX_SIZE = 16  # The matrix is 16x16
+
+# Initialize the NeoPixel object
+pin = machine.Pin(LED_PIN)
+np = NeoPixel(pin, NUM_LEDS)
+
+def adjust_brightness_with_gamma(color, scale, gamma=2.2):
+    """
+    Adjust the brightness of a color with gamma correction.
+    :param color: A tuple (R, G, B) representing the color.
+    :param scale: A scaling factor between 0 and 1 (e.g., 0.5 for 50% brightness).
+    :param gamma: The gamma correction value (default is 2.2).
+    :return: A new color tuple with adjusted brightness.
+    """
+    corrected_scale = scale ** gamma
+    return tuple(int(c * corrected_scale) for c in color)
+
+def clear_matrix():
+    """Clear the entire matrix."""
+    for i in range(NUM_LEDS):
+        np[i] = (0, 0, 0)
+    np.write()
+
+def matrix_position(x, y, matrix_size):
+    """
+    Calculate the LED index based on vertical serpentine layout.
+    :param x: X-coordinate (column) of the LED.
+    :param y: Y-coordinate (row) of the LED.
+    :param matrix_size: Size of the matrix (e.g., 16 for a 16x16 matrix).
+    :return: Index of the LED in the NeoPixel array.
+    """
+    if x % 2 == 0:  # Even column (normal vertical order)
+        return x * matrix_size + y
+    else:  # Odd column (reversed vertical order)
+        return x * matrix_size + (matrix_size - 1 - y)
+
+def display_character(char, color, brightness=1.0, gamma=2.2):
+    """
+    Display a character on the 16x16 matrix.
+    :param char: The character to display (must be in myfont.font).
+    :param color: The color tuple (R, G, B) for the LEDs.
+    :param brightness: A scaling factor between 0 and 1 to adjust brightness.
+    :param gamma: Gamma correction value for brightness adjustment.
+    """
+    if char not in myfont.font:
+        print(f"Character '{char}' not found in the font!")
+        return
+
+    # Adjust color brightness with gamma correction
+    adjusted_color = adjust_brightness_with_gamma(color, brightness, gamma)
+
+    # Fetch the 8x8 character pattern
+    char_pattern = myfont.font[char]
+    
+    # Center the character on the 16x16 matrix
+    x_offset = (MATRIX_SIZE - 8) // 2
+    y_offset = (MATRIX_SIZE - 8) // 2
+
+    clear_matrix()
+
+    # Iterate over the character pattern
+    for row_idx, row in enumerate(char_pattern):
+        for col_idx in range(8):
+            if row & (1 << (7 - col_idx)):  # Check if the bit is set
+                # Calculate the position in the 16x16 matrix
+                x = x_offset + col_idx
+                y = y_offset + row_idx
+                pos = matrix_position(x, y, MATRIX_SIZE)
+                np[pos] = adjusted_color
+
+    np.write()
+
+# Example usage
+char_to_display = "W"  # Change this to the character you want to test
+color_to_use = colors.Red  # Change this to a color from colors.py
+brightness_level = 0.5  # Adjust brightness (e.g., 0.5 for 50%)
+
+display_character(char_to_display, color_to_use, brightness=brightness_level)

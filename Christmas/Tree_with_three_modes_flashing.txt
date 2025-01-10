@@ -1,0 +1,126 @@
+import machine
+import neopixel
+import time
+import colors
+import random
+import network
+import socket
+
+# Initialize the NeoPixel strip
+pin = machine.Pin(19)  # GPIO for the NeoPixel
+num_leds = 240
+np = neopixel.NeoPixel(pin, num_leds)
+
+# Define colors
+white = colors.White
+dark_green = colors.Dark_green
+golden_yellow = colors.Golden_yellow
+flashing_colors = [colors.Blue, colors.Hot_Magenta, colors.Red, golden_yellow]
+
+# Lighting modes
+def mode_green_with_random_flash():
+    for i in range(num_leds):
+        np[i] = dark_green
+    for idx in range(0, num_leds, num_leds // len(flashing_colors)):
+        np[idx] = random.choice(flashing_colors)
+    np.write()
+
+def mode_white_with_flashing_gold():
+    for i in range(num_leds):
+        np[i] = white
+    for idx in range(0, num_leds, num_leds // len(flashing_colors)):
+        np[idx] = golden_yellow
+    np.write()
+
+def mode_white_with_random_flash():
+    for i in range(num_leds):
+        np[i] = white
+    for idx in range(0, num_leds, num_leds // len(flashing_colors)):
+        np[idx] = random.choice(flashing_colors)
+    np.write()
+
+# Mode functions array
+modes = [mode_green_with_random_flash, mode_white_with_flashing_gold, mode_white_with_random_flash]
+
+# Set initial mode
+current_mode = 0
+modes[current_mode]()  # Start with the first mode
+
+# Access Point setup
+ssid = "ESP32_NeoPixel_Controller"
+password = "12345678"  # Minimum 8 characters
+
+def setup_access_point():
+    ap = network.WLAN(network.AP_IF)
+    ap.active(True)
+    ap.config(essid=ssid, password=password)
+    print("Access Point created. Connect to:", ssid)
+    print("Password:", password)
+    print("AP IP address:", ap.ifconfig()[0])
+    return ap.ifconfig()[0]
+
+# Web server setup
+def web_page():
+    html = """<!DOCTYPE html>
+<html>
+<head>
+    <title>NeoPixel Controller</title>
+    <style>
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>NeoPixel Controller</h1>
+    <button onclick="location.href='/mode?m=0'">Mode 1: Green with Random Flash</button>
+    <button onclick="location.href='/mode?m=1'">Mode 2: White with Flashing Gold</button>
+    <button onclick="location.href='/mode?m=2'">Mode 3: White with Random Flash</button>
+</body>
+</html>"""
+    return html
+
+def start_web_server():
+    addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
+    s = socket.socket()
+    s.bind(addr)
+    s.listen(5)
+    print("Listening on", addr)
+
+    while True:
+        cl, addr = s.accept()
+        print("Client connected from", addr)
+        request = cl.recv(1024).decode('utf-8')
+        print("Request:", request)
+
+        # Parse the request
+        if "GET /mode?m=" in request:
+            try:
+                global current_mode
+                mode_index = int(request.split("m=")[1].split()[0])
+                if 0 <= mode_index < len(modes):
+                    current_mode = mode_index
+                    modes[current_mode]()  # Activate the selected mode
+            except Exception as e:
+                print("Error parsing mode:", e)
+
+        # Send the response
+        response = web_page()
+        cl.send("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n")
+        cl.send(response)
+        cl.close()
+
+# Set up the Access Point and start the web server
+try:
+    ip = setup_access_point()
+    print("Web server running on http://", ip)
+    start_web_server()
+except KeyboardInterrupt:
+    print("Shutting down.")
+    for i in range(num_leds):
+        np[i] = (0, 0, 0)
+    np.write()
+

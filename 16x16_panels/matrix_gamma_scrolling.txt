@@ -1,0 +1,105 @@
+import machine
+from neopixel import NeoPixel
+import time
+import myfont
+import colors
+
+# Configuration
+LED_PIN = 15  # Pin connected to the LED data line
+number_panels = 3  # Number of 16x16 panels
+panel_size = 16  # Size of each panel (16x16)
+MATRIX_WIDTH = panel_size * number_panels  # Total width of the matrix in columns
+MATRIX_HEIGHT = panel_size  # Height of the matrix in rows
+NUM_LEDS = MATRIX_WIDTH * MATRIX_HEIGHT  # Total number of LEDs
+SCROLL_SPEED = 0.1  # Time in seconds between scroll steps
+
+# Initialize the NeoPixel object
+pin = machine.Pin(LED_PIN)
+np = NeoPixel(pin, NUM_LEDS)
+
+def adjust_brightness_with_gamma(color, scale, gamma=2.2):
+    """Adjust brightness with gamma correction."""
+    corrected_scale = scale ** gamma
+    return tuple(int(c * corrected_scale) for c in color)
+
+def clear_matrix():
+    """Clear the entire matrix."""
+    for i in range(NUM_LEDS):
+        np[i] = (0, 0, 0)
+    np.write()
+
+def matrix_position(x, y):
+    """
+    Calculate the LED index based on a top-left vertical serpentine layout across multiple panels.
+    :param x: Column index.
+    :param y: Row index.
+    :return: LED index in the NeoPixel array.
+    """
+    panel_index = x // panel_size  # Determine the panel the column belongs to
+    local_x = x % panel_size  # Local column index within the panel
+    if local_x % 2 == 0:  # Even column (top-to-bottom)
+        return panel_index * panel_size * MATRIX_HEIGHT + local_x * MATRIX_HEIGHT + y
+    else:  # Odd column (bottom-to-top)
+        return panel_index * panel_size * MATRIX_HEIGHT + local_x * MATRIX_HEIGHT + (MATRIX_HEIGHT - 1 - y)
+
+def transpose_font(font_char):
+    """
+    Transpose font data from rows to columns for vertical orientation,
+    skipping any leading blank columns.
+    :param font_char: List of integers representing the font rows.
+    :return: List of integers representing the transposed font columns.
+    """
+    transposed = [0] * 8  # Initialize an 8-column buffer
+    for row_idx, row in enumerate(font_char):
+        for col_idx in range(8):  # Transpose all 8 bits
+            if row & (1 << (7 - col_idx)):
+                transposed[col_idx] |= (1 << row_idx)
+    
+    # Trim the first 3 columns (assuming they are blank) and return only the last 5
+    return transposed[3:8]  # Columns 3 to 7 (inclusive) contain the actual 5x7 font
+
+def render_column(col_data, col_offset, color):
+    """
+    Render a single column of data on the matrix.
+    :param col_data: An 8-bit number representing the column pixels.
+    :param col_offset: The offset of the column on the matrix.
+    :param color: The color to display.
+    """
+    for row_idx in range(8):
+        if col_data & (1 << row_idx):
+            pos = matrix_position(col_offset, row_idx + (MATRIX_HEIGHT - 8) // 2)
+            np[pos] = color
+
+def scroll_text(text, color, brightness=1.0, gamma=2.2, scroll_speed=SCROLL_SPEED):
+    """Scroll text across the LED matrix."""
+    adjusted_color = adjust_brightness_with_gamma(color, brightness, gamma)
+
+    # Build the full text buffer
+    buffer = []
+    for char in text:
+        if char in myfont.font:
+            transposed_char = transpose_font(myfont.font[char])
+            buffer.extend(transposed_char)
+            buffer.append(0)  # Add a spacer column
+
+    # Add padding for scrolling
+    buffer = [0] * MATRIX_WIDTH + buffer + [0] * MATRIX_WIDTH
+
+    # Scroll the text
+    for col_start in range(len(buffer) - MATRIX_WIDTH):
+        clear_matrix()
+
+        # Render the visible part of the buffer
+        for col_offset in range(MATRIX_WIDTH):
+            render_column(buffer[col_start + col_offset], col_offset, adjusted_color)
+
+        np.write()
+        time.sleep(scroll_speed)
+
+# Example usage
+text_to_scroll = "HELLO WORLD"  # Text to scroll
+color_to_use = colors.Red  # Text color
+brightness_level = 0.5  # Brightness scale (0 to 1)
+
+scroll_text(text_to_scroll, color_to_use, brightness=brightness_level)
+

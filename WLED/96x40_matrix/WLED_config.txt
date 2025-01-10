@@ -1,0 +1,53 @@
+			offsets start at top left					
+								
+Panel 2			Panel 1				Panel 0	
+Top right			Top right				Top right	
+Vertical			Vertical				Vertical	
+Serpentine			Serpentine				Serpentine	
+Vertical			Vertical				Vertical	
+Width	Height		Width	Height			Width	Height
+32	8		32	8			32	8
+offset x	offset y		offset x	offset y			offset x	offset y
+0	0		32	0			64	0
+								
+								
+Panel 5			Panel 4				Panel 3	
+Top right			Top right				Top right	
+Vertical			Vertical				Vertical	
+Serpentine			Serpentine				Serpentine	
+Vertical			Vertical				Vertical	
+Width	Height		Width	Height			Width	Height
+32	8		32	8			32	8
+offset x	offset y		offset x	offset y			offset x	offset y
+0	8		32	8			64	8
+								
+								
+Panel 8			Panel 7				Panel 6	
+Top right			Top right				Top right	
+Vertical			Vertical				Vertical	
+Serpentine			Serpentine				Serpentine	
+Vertical			Vertical				Vertical	
+Width	Height		Width	Height			Width	Height
+32	8		32	8			32	8
+offset x	offset y		offset x	offset y			offset x	offset y
+0	16		32	16			64	16
+								
+Panel 11			Panel 10				Panel 9	
+Top right			Top right				Top right	
+Vertical			Vertical				Vertical	
+Serpentine			Serpentine				Serpentine	
+Vertical			Vertical				Vertical	
+Width	Height		Width	Height			Width	Height
+32	8		32	8			32	8
+offset x	offset y		offset x	offset y			offset x	offset y
+0	24		32	24			64	24
+								
+Panel 14			Panel 13				Panel 12	
+Top right			Top right				Top right	
+Vertical			Vertical				Vertical	
+Serpentine			Serpentine				Serpentine	
+Vertical			Vertical				Vertical	
+Width	Height		Width	Height			Width	Height
+32	8		32	8			32	8
+offset x	offset y		offset x	offset y			offset x	offset y
+0	32		32	32			64	32

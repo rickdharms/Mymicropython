@@ -1,0 +1,112 @@
+# Version 2
+
+import machine
+import neopixel
+import time
+import random
+
+# Initialize the NeoPixel strip
+pin = machine.Pin(12  # GPIO for the NeoPixel
+num_leds = 241
+np = neopixel.NeoPixel(pin, num_leds)
+
+# Define colors
+white = (255, 255, 255)
+dark_green = (0, 128, 0)
+golden_yellow = (255, 223, 0)
+flashing_colors = [(0, 0, 255), (255, 0, 255), (255, 0, 0), golden_yellow]
+
+# Adjustable brightness levels for each mode
+brightness_white = 0.5  # White background brightness (0.0 - 1.0)
+brightness_green = 0.3  # Green background brightness (0.0 - 1.0)
+brightness_gold = 0.6  # Golden background brightness (0.0 - 1.0)
+
+# Helper function to scale brightness
+def adjust_brightness(color, brightness):
+    return (int(color[0] * brightness), int(color[1] * brightness), int(color[2] * brightness))
+
+# Button setup on pin 4
+button_pin = machine.Pin4,machine.Pin.IN, machine.Pin.PULL_UP)
+
+# Mode state and debounce time
+mode = 0
+last_press_time = 0
+debounce_delay = 200  # milliseconds
+
+# Flashing functionality
+flashing_indices = []
+flashing_intervals = []
+last_flash_time = []
+
+def setup_flashing():
+    global flashing_indices, flashing_intervals, last_flash_time
+    step = num_leds // (len(flashing_colors) * 6)
+    flashing_indices = [i * len(flashing_colors) * step + j * step for i in range(6) for j in range(len(flashing_colors))]
+    flashing_intervals = [random.uniform(0.2, 1.5) for _ in flashing_indices]
+    last_flash_time = [time.ticks_ms()] * len(flashing_indices)
+
+def flash_leds(base_color, brightness):
+    current_time = time.ticks_ms()
+    for idx, led_idx in enumerate(flashing_indices):
+        if time.ticks_diff(current_time, last_flash_time[idx]) > flashing_intervals[idx] * 1000:
+            # Toggle the LED between flashing color and base color
+            current_color = np[led_idx]
+            if current_color == flashing_colors[idx % len(flashing_colors)]:
+                np[led_idx] = adjust_brightness(base_color, brightness)
+            else:
+                np[led_idx] = flashing_colors[idx % len(flashing_colors)]
+            last_flash_time[idx] = current_time
+    np.write()
+
+# Lighting modes with flashing and brightness control
+def mode_green_with_random_flash():
+    setup_flashing()
+    for i in range(num_leds):
+        np[i] = adjust_brightness(dark_green, brightness_green)
+    np.write()
+    while mode == 0:  # Check if mode changes
+        flash_leds(dark_green, brightness_green)
+        time.sleep(0.05)
+
+def mode_white_with_flashing_gold():
+    setup_flashing()
+    for i in range(num_leds):
+        np[i] = adjust_brightness(white, brightness_white)
+    np.write()
+    while mode == 1:  # Check if mode changes
+        flash_leds(white, brightness_white)
+        time.sleep(0.05)
+
+def mode_white_with_random_flash():
+    setup_flashing()
+    for i in range(num_leds):
+        np[i] = adjust_brightness(white, brightness_white)
+    np.write()
+    while mode == 2:  # Check if mode changes
+        flash_leds(white, brightness_white)
+        time.sleep(0.05)
+
+# Mode functions array for cycling
+modes = [mode_green_with_random_flash, mode_white_with_flashing_gold, mode_white_with_random_flash]
+
+# Function to change mode on button press
+def change_mode(pin):
+    global mode, last_press_time
+    current_time = time.ticks_ms()
+    if time.ticks_diff(current_time, last_press_time) > debounce_delay:
+        mode = (mode + 1) % len(modes)  # Cycle through modes
+        last_press_time = current_time
+
+# Attach the interrupt to the button pin
+button_pin.irq(trigger=machine.Pin.IRQ_FALLING, handler=change_mode)
+
+# Main loop
+try:
+    while True:
+        # Call the current mode function
+        modes[mode]()
+except KeyboardInterrupt:
+    # Cleanup on exit
+    for i in range(num_leds):
+        np[i] = (0, 0, 0)
+    np.write()
