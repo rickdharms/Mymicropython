@@ -1,0 +1,126 @@
+LED panel layout
+Panel 0
+1st LED: 
+Top Right
+
+Orientation: 
+Vertical Serpentine: 
+Dimensions (WxH): 
+32x8
+Offset X:64 Y:0
+
+(offset from top-left corner in # LEDs)
+Panel 1
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:32 Y:0
+
+(offset from top-left corner in # LEDs)
+Panel 2
+1st LED:Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:0 Y:0
+
+(offset from top-left corner in # LEDs)
+Panel 3
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:64 Y:8
+
+(offset from top-left corner in # LEDs)
+Panel 4
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:32 Y:8
+
+(offset from top-left corner in # LEDs)
+Panel 5
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:0 Y:8
+
+(offset from top-left corner in # LEDs)
+Panel 6
+1st LED: Top Right
+
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:64 Y:16
+
+(offset from top-left corner in # LEDs)
+Panel 7
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:32 Y:16
+
+(offset from top-left corner in # LEDs)
+Panel 8
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:0 Y:16
+
+(offset from top-left corner in # LEDs)
+Panel 9
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:64 Y:24
+
+(offset from top-left corner in # LEDs)
+Panel 10
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:32 Y:24
+
+(offset from top-left corner in # LEDs)
+Panel 11
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:0 Y:24
+
+(offset from top-left corner in # LEDs)
+Panel 12
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH):32 x 8
+Offset X:64 Y:32
+
+(offset from top-left corner in # LEDs)
+Panel 13
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:32 Y:32
+
+(offset from top-left corner in # LEDs)
+Panel 14
+1st LED: Top Right
+Orientation: Vertical
+Serpentine: 
+Dimensions (WxH): 32 x 8
+Offset X:0 Y:32
+
+(offset from top-left corner in # LEDs)
+Matrix Dimensions (W*H=LC): 96 x 40 = 3840
