@@ -1,0 +1,11 @@
+# Exclude compiled Python files
+*.pyc
+__pycache__/
+
+# Exclude temporary files
+*.log
+*.tmp
+
+# Exclude directories
+node_modules/
+dist/
