@@ -8,6 +8,9 @@ import time
 MQTT_BROKER = "10.0.0.46"
 MQTT_TOPIC = "led_matrix/command"
 
+# MQTT Client Setup
+client = mqtt.Client()
+
 # Callback for disconnection
 def on_disconnect(client, userdata, rc):
     """Handle disconnection and attempt to reconnect."""
@@ -22,7 +25,7 @@ def on_disconnect(client, userdata, rc):
             time.sleep(5)  # Retry every 5 seconds
 
 # MQTT Client Setup
-client = mqtt.Client()
+#client = mqtt.Client()
 
 # Add disconnect handler
 client.on_disconnect = on_disconnect
