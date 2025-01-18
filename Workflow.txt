@@ -1,0 +1,30 @@
+
+
+
+summary of workflow
+
+1.Stage Your Changes:
+	git add <file>  # Add specific file
+	git add .       # Add all changes
+	
+2.Commit Your Changes: 	
+	git commit -m "Your commit message"
+	
+3.Push Your Changes: 
+	git push origin main  # Replace 'main' with your branch name if it's different
+	
+	
+How to handle old versions
+
+1.Delete it locally:
+	rm example.txt
+2.Check its status in Git:
+	git status
+	Output:
+			deleted: example.txt
+3.Stage and commit the deletion:
+	git add example.txt
+	git commit -m "Remove example.txt as it is no longer needed"
+				
+4. Push to GitHub
+	git push origin main
