@@ -26,6 +26,17 @@ TOTAL_LEDS = MATRIX_WIDTH * MATRIX_HEIGHT  # Total LEDs per row
 # Initialize NeoPixel matrices for all rows
 matrices = [neopixel.NeoPixel(Pin(pin), TOTAL_LEDS) for pin in ROW_PINS]
 
+# Per-row brightness levels (0.0 to 1.0)
+row_brightness = [1.0] * len(ROW_PINS)
+
+def apply_gamma_correction(color, brightness):
+    """Apply gamma correction and brightness adjustment."""
+    gamma = 2.8
+    return [
+        int((c / 255.0) ** gamma * 255 * brightness)
+        for c in color
+    ]
+
 # Connect to WiFi
 def connect_to_wifi():
     wlan = network.WLAN(network.STA_IF)
@@ -36,88 +47,6 @@ def connect_to_wifi():
         time.sleep(1)
     print(f"Connected to WiFi, IP address: {wlan.ifconfig()[0]}")
 
-# Fetch current time from an NTP server
-def get_ntp_time(host="pool.ntp.org"):
-    """Fetch the current time from an NTP server."""
-    NTP_DELTA = 2208988800  # Time difference between 1900 and 1970 (in seconds)
-    try:
-        addr = socket.getaddrinfo(host, 123)[0][-1]
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(1)
-        msg = b'\x1b' + 47 * b'\0'
-        s.sendto(msg, addr)
-        msg, _ = s.recvfrom(48)
-        s.close()
-        t = struct.unpack("!I", msg[40:44])[0]
-        print(f"Raw NTP timestamp: {t}")
-        unix_timestamp = t - NTP_DELTA
-        print(f"Unix timestamp: {unix_timestamp}")
-        return unix_timestamp
-    except Exception as e:
-        print(f"Error fetching NTP time: {e}")
-        return None
-
-def calculate_date_from_days(days):
-    """Calculate the year, month, and day from days since the Unix epoch."""
-    days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    year = 1970
-    while days >= 365 + is_leap_year(year):
-        days -= 365 + is_leap_year(year)
-        year += 1
-
-    # Adjust for leap years
-    days_in_month[1] = 29 if is_leap_year(year) else 28
-
-    # Calculate month and day
-    month = 1
-    while days >= days_in_month[month - 1]:
-        days -= days_in_month[month - 1]
-        month += 1
-
-    return year, month, days + 1
-
-def is_leap_year(year):
-    """Determine if a year is a leap year."""
-    return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
-
-def is_dst():
-    """Always return False for now (DST calculation is optional)."""
-    return False
-
-def replace_reserved_words(text):
-    """Replace reserved words with dynamic values."""
-    timestamp = get_ntp_time()
-    if timestamp is None:
-        print("NTP fetch failed. Returning original text.")
-        return text  # If NTP fails, leave text as-is
-    
-    # Correctly convert timestamp to date and time components
-    timestamp += -7 * 3600 if is_dst() else -8 * 3600  # Adjust for Pacific Time
-
-    days_since_epoch = timestamp // 86400
-    seconds_in_day = timestamp % 86400
-
-    # Calculate date
-    year, month, day = calculate_date_from_days(days_since_epoch)
-
-    # Calculate time
-    hour = (seconds_in_day // 3600) % 24
-    minute = (seconds_in_day % 3600) // 60
-    second = seconds_in_day % 60
-
-    print(f"Calculated Date: {year}-{month:02}-{day:02}, Time: {hour:02}:{minute:02}:{second:02}")
-
-    # Replace reserved words
-    replacements = {
-        "#DATE": f"{day:02}/{month:02}/{year}",
-        "#TIME1": f"{hour:02}:{minute:02}",
-        "#TIME2": f"{hour % 12 or 12:02}:{minute:02} {'AM' if hour < 12 else 'PM'}",
-    }
-    for key, value in replacements.items():
-        text = text.replace(key, value)
-    print(f"Replaced text: {text}")
-    return text
-
 # Map matrix coordinates to LED index for vertical serpentine layout
 def map_matrix(x, y):
     col = x
@@ -127,32 +56,68 @@ def map_matrix(x, y):
         return col * MATRIX_HEIGHT + (MATRIX_HEIGHT - 1 - y)  # Reverse y for odd columns
 
 # Render a character on a specific row
-def render_character(character, x_offset, color, matrix):
+def render_character(character, x_offset, color, matrix, brightness):
     """Render a single character on the matrix."""
     char_data = bigfont.get(character, [0] * 8)  # Default: empty character
+    adjusted_color = apply_gamma_correction(color, brightness)
     for y, row in enumerate(char_data):
         for x in range(8):
             if row & (1 << (7 - x)):  # Check each bit
                 index = map_matrix(x + x_offset, y)
                 if 0 <= index < len(matrix):  # Bounds check
-                    matrix[index] = (
-                        int(color[0]),
-                        int(color[1]),
-                        int(color[2]),
-                    )
+                    matrix[index] = tuple(adjusted_color)
 
 # Render text on a specific row
 def render_text_on_row(text, color, row_index):
     """Render a line of text on a specific row."""
     matrix = matrices[row_index]
+    brightness = row_brightness[row_index]
     matrix.fill((0, 0, 0))  # Clear the row
     x_offset = 0  # Start at the left
     for char in text:
-        render_character(char, x_offset, color, matrix)
+        render_character(char, x_offset, color, matrix, brightness)
         x_offset += 8  # Move to the next character
         if x_offset >= MATRIX_WIDTH:  # Prevent overflow
             break
     matrix.write()
+
+def replace_reserved_words(text):
+    """Replace reserved words like #DATE and #TIME with actual values."""
+    try:
+        if "#DATE" in text or "#TIME" in text:
+            ntp_host = "pool.ntp.org"
+            ntp_port = 123
+            buf = b'\x1b' + 47 * b'\0'
+
+            addr = socket.getaddrinfo(ntp_host, ntp_port)[0][-1]
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(1)
+            s.sendto(buf, addr)
+            msg, _ = s.recvfrom(48)
+            s.close()
+
+            # Extract and validate the timestamp
+            ntp_time = struct.unpack("!I", msg[40:44])[0]
+            epoch = ntp_time - 2208988800  # Convert NTP time to Unix epoch
+            print(f"NTP Time: {ntp_time}, Unix Epoch: {epoch}")
+
+            if epoch < 0 or epoch > 2147483647:  # Ensure valid Unix timestamp
+                raise ValueError("Invalid NTP timestamp received.")
+
+            tm = time.localtime(epoch - 8 * 3600)  # Adjust for Pacific Time (UTC-8)
+
+            formatted_date = f"{tm[2]:02d}/{tm[1]:02d}/{tm[0]}"
+            formatted_time24 = f"{tm[3]:02d}:{tm[4]:02d}"
+            hour12 = tm[3] % 12 or 12
+            am_pm = "AM" if tm[3] < 12 else "PM"
+            formatted_time12 = f"{hour12}:{tm[4]:02d} {am_pm}"
+
+            text = text.replace("#DATE", formatted_date)
+            text = text.replace("#TIME1", formatted_time24)
+            text = text.replace("#TIME2", formatted_time12)
+    except Exception as e:
+        print(f"Error replacing reserved words: {e}")
+    return text
 
 # MQTT Callback for incoming messages
 def on_message(topic, msg):
@@ -163,9 +128,16 @@ def on_message(topic, msg):
         row = command.get("row", None)
         text = command.get("text", "")
         color = command.get("color", [255, 255, 255])
+        brightness = command.get("brightness", None)  # New brightness parameter
 
-        # Replace reserved words
-        processed_text = replace_reserved_words(text)
+        text = replace_reserved_words(text)  # Replace reserved words
+
+        if brightness is not None and 0.0 <= brightness <= 1.0:
+            if row == -1:  # Apply to all rows
+                for i in range(len(row_brightness)):
+                    row_brightness[i] = brightness
+            elif 0 <= row < len(row_brightness):
+                row_brightness[row] = brightness
 
         if row == -1:  # Clear all rows
             for matrix in matrices:
@@ -173,7 +145,7 @@ def on_message(topic, msg):
                 matrix.write()
             return
 
-        render_text_on_row(processed_text, tuple(color), row)
+        render_text_on_row(text, tuple(color), row)
     except Exception as e:
         print(f"Error processing message: {e}")
 
