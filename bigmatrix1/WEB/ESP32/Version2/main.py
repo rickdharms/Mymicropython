@@ -9,8 +9,8 @@ import time
 from bigfont import bigfont
 
 # WiFi Configuration
-WIFI_SSID = "harmslosp"
-WIFI_PASSWORD = "Larisa!49"
+WIFI_SSID = "SSID"
+WIFI_PASSWORD = "PASSWORD"
 
 # MQTT Configuration
 MQTT_BROKER = "10.0.0.46"  # Broker IP
